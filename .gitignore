@@ -20,6 +20,7 @@ build/
 # Node / Frontend
 frontend/node_modules/
 frontend/dist/
+backend/static/
 frontend/.vite/
 frontend/coverage/
 

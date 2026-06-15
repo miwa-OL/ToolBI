@@ -246,9 +246,34 @@ Chart ownership is verified on update/delete (chart.report_id must match path re
 
 ---
 
+---
+
+### Session 10 — UX polish + Windows packaging (2026-06-15)
+
+**UX improvements:**
+- SVG logo (`ToolBILogo.tsx`) with 3 rising arrows + gradient "ToolBI" text, replaces sidebar text
+- Collapsible sidebar with `width` CSS transition (0.28s cubic-bezier); floating `<Menu>` button appears when collapsed
+- Gradient color palettes in ReportBuilder: `"#from|#to"` notation, `resolveGradients()` injects SVG `<linearGradient>` defs into Bar/Pie charts
+- Color palette hidden in a dropdown picker with Solid / Gradient sections (`PalettePicker` component)
+- Right panel redesigned as independent accordions (Chart Type, Axes, Filters, Appearance) using CSS grid `gridTemplateRows` animation
+- Filter value dropdown (`<datalist>`) with distinct-values autocomplete
+- Help page (`/help`) with sticky TOC + full manual (Data Sources, Report Builder, Dashboard) and 5 example reports
+
+**Windows packaging:**
+- `app.py` — uvicorn starts in daemon thread; health-polls `/api/v1/health` up to 10× (0.5s apart); opens PyWebView window on success or shows HTML error dialog + `SystemExit(1)` on failure
+- `backend/main.py` — catch-all SPA route registered before `StaticFiles` mount; path traversal protection via `.resolve()` + `is_relative_to()`
+- `build.py` — 4-step build script: npm build → copy to `backend/static/` → PyInstaller; cross-platform npm via `shutil.which`
+- `toolbi.spec` — onedir mode, `pathex=['backend']`, windowed (no console), uvicorn/duckdb/pyarrow/webview hidden imports, large package excludes
+- `python build.py` → succeeded; `dist/ToolBI/ToolBI.exe` (15.6 MB) built successfully
+- User data written to `%APPDATA%\ToolBI\` (platform-aware via `config.py`)
+
+**Git:** initial commit `212efd8`; GitHub repo at `https://github.com/miwa-OL/ToolBI`
+
+---
+
 ## Up Next
 
-### Session 10 — Polish & UX improvements
+### Session 11 — Further polish / features
 - Delete report from sidebar (right-click or trash icon)
 - Report list sorted by `updated_at` desc
 - Dashboard: grid snap indicator lines while dragging

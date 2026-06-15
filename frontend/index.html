@@ -4,9 +4,84 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>frontend</title>
+    <title>ToolBI</title>
+    <style>
+      #splash {
+        position: fixed;
+        inset: 0;
+        background: #f2f2f7;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 20px;
+        z-index: 9999;
+        opacity: 1;
+        transition: opacity 0.35s ease;
+      }
+      #splash.out {
+        opacity: 0;
+        pointer-events: none;
+      }
+      .sp-bars {
+        display: flex;
+        align-items: flex-end;
+        gap: 10px;
+        height: 72px;
+      }
+      .sp-bar {
+        width: 18px;
+        border-radius: 5px 5px 3px 3px;
+        transform-origin: bottom center;
+        animation: sp-bounce 1.1s ease-in-out infinite;
+      }
+      .sp-bar:nth-child(1) {
+        height: 40px;
+        background: linear-gradient(to top, #48cae4, #0096c7);
+        opacity: 0.55;
+        animation-delay: 0s;
+      }
+      .sp-bar:nth-child(2) {
+        height: 56px;
+        background: linear-gradient(to top, #0096c7, #0077b6);
+        opacity: 0.77;
+        animation-delay: 0.18s;
+      }
+      .sp-bar:nth-child(3) {
+        height: 72px;
+        background: linear-gradient(to top, #0077b6, #023e8a);
+        opacity: 1;
+        animation-delay: 0.36s;
+      }
+      @keyframes sp-bounce {
+        0%, 100% { transform: scaleY(1); }
+        50%       { transform: scaleY(0.48); }
+      }
+      .sp-label {
+        font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+        font-size: 20px;
+        font-weight: 700;
+        letter-spacing: -0.4px;
+        color: #1c1c1e;
+      }
+      .sp-label span {
+        background: linear-gradient(90deg, #0077b6, #023e8a);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-weight: 800;
+      }
+    </style>
   </head>
   <body>
+    <div id="splash">
+      <div class="sp-bars">
+        <div class="sp-bar"></div>
+        <div class="sp-bar"></div>
+        <div class="sp-bar"></div>
+      </div>
+      <div class="sp-label">Tool<span>BI</span></div>
+    </div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

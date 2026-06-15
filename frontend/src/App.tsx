@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import { Menu } from 'lucide-react'
 import { Sidebar } from '@/components/Sidebar'
@@ -7,9 +7,18 @@ import DataSources from '@/pages/DataSources'
 import ReportBuilder from '@/pages/ReportBuilder'
 import Dashboard from '@/pages/Dashboard'
 import Help from '@/pages/Help'
+import { UpdateBanner } from '@/components/UpdateBanner'
 
 export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(true)
+
+  useEffect(() => {
+    const splash = document.getElementById('splash')
+    if (!splash) return
+    splash.classList.add('out')
+    const t = setTimeout(() => splash.remove(), 380)
+    return () => clearTimeout(t)
+  }, [])
 
   return (
     <BrowserRouter>
@@ -35,6 +44,8 @@ export default function App() {
             <Route path="/help" element={<Help />} />
           </Routes>
         </main>
+
+        <UpdateBanner />
 
         <button
           onClick={() => setSidebarOpen(true)}

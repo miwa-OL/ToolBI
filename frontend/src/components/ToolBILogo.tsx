@@ -2,6 +2,15 @@ export function ToolBILogo() {
   return (
     <svg width="112" height="30" viewBox="0 0 112 30" fill="none" xmlns="http://www.w3.org/2000/svg">
       <defs>
+        <style>{`
+          @keyframes tbi-rise {
+            0%, 100% { transform: translateY(0px); }
+            50%       { transform: translateY(-3px); }
+          }
+          .tbi-b1 { animation: tbi-rise 2.2s ease-in-out infinite 0s; }
+          .tbi-b2 { animation: tbi-rise 2.2s ease-in-out infinite 0.22s; }
+          .tbi-b3 { animation: tbi-rise 2.2s ease-in-out infinite 0.44s; }
+        `}</style>
         <linearGradient id="tbi-a1" x1="3" y1="28" x2="13" y2="2" gradientUnits="userSpaceOnUse">
           <stop offset="0%" stopColor="#48CAE4" />
           <stop offset="100%" stopColor="#0096C7" />
@@ -20,9 +29,9 @@ export function ToolBILogo() {
         </linearGradient>
       </defs>
 
-      <path d="M1,28 L5,28 L15,6 L18,6 L13,0 L8,6 L11,6 Z" fill="url(#tbi-a1)" opacity="0.5" />
-      <path d="M6,28 L10,28 L20,6 L23,6 L18,0 L13,6 L16,6 Z" fill="url(#tbi-a2)" opacity="0.75" />
-      <path d="M11,28 L15,28 L25,6 L28,6 L23,0 L18,6 L21,6 Z" fill="url(#tbi-a3)" />
+      <path className="tbi-b1" d="M1,28 L5,28 L15,6 L18,6 L13,0 L8,6 L11,6 Z" fill="url(#tbi-a1)" opacity="0.5" />
+      <path className="tbi-b2" d="M6,28 L10,28 L20,6 L23,6 L18,0 L13,6 L16,6 Z" fill="url(#tbi-a2)" opacity="0.75" />
+      <path className="tbi-b3" d="M11,28 L15,28 L25,6 L28,6 L23,0 L18,6 L21,6 Z" fill="url(#tbi-a3)" />
 
       <text
         x="34"
