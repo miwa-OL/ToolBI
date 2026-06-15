@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx shadcn@4.9.0 init -y -d)"
+    ]
+  }
+}

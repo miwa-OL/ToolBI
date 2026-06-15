@@ -1,0 +1,11 @@
+fastapi
+uvicorn[standard]
+pandas
+pyarrow
+duckdb
+sqlmodel
+python-multipart
+aiofiles
+pywebview
+pyinstaller
+pillow
