@@ -17,9 +17,9 @@ _OP_MAP = {
 
 
 def _safe_field(name: str) -> str:
-    if not re.match(r"^[a-zA-Z0-9_]+$", name):
+    if not name or '"' in name:
         raise ValueError(f"Invalid field name: '{name}'")
-    return name
+    return f'"{name}"'
 
 
 def _serialize(value: object) -> object:

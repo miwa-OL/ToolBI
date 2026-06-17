@@ -172,7 +172,7 @@ function ChartPreview({ form }: { form: FormState }) {
           y_field: form.yField || null,
           aggregation: form.aggregation,
           group_by: form.groupBy.filter(Boolean),
-          filters: form.filters.map(toFilterSpec),
+          filters: form.filters.filter((f) => f.field && f.valueStr.trim()).map(toFilterSpec),
           limit: 100,
         })
         if (!cancelled) setRows(resp.rows)
@@ -258,33 +258,43 @@ function FilterRow({
   }, [datasetId, filter.field, filter.operator])
 
   return (
-    <div className="flex gap-1.5 items-center">
-      <select
-        className="flex-1 h-8 rounded border border-black/[0.09] px-2 text-xs text-[#3A3A3C] bg-white min-w-0"
-        value={filter.field}
-        onChange={(e) => onChange({ ...filter, field: e.target.value })}
-      >
-        <option value="">Field</option>
-        {columns.map((c) => (
-          <option key={c.name} value={c.name}>{c.name}</option>
-        ))}
-      </select>
-      <select
-        className="w-24 h-8 rounded border border-black/[0.09] px-1 text-xs text-[#3A3A3C] bg-white shrink-0"
-        value={filter.operator}
-        onChange={(e) => onChange({ ...filter, operator: e.target.value as FilterOperator })}
-      >
-        {OP_OPTIONS.map((o) => (
-          <option key={o.value} value={o.value}>{o.label}</option>
-        ))}
-      </select>
-      <input
-        className="w-24 h-8 rounded border border-black/[0.09] px-2 text-xs text-[#3A3A3C] shrink-0"
-        placeholder={filter.operator === 'in' ? 'a, b, c' : 'value'}
-        value={filter.valueStr}
-        list={suggestions.length ? listId : undefined}
-        onChange={(e) => onChange({ ...filter, valueStr: e.target.value })}
-      />
+    <div className="flex flex-col gap-1.5">
+      <div className="flex items-center gap-1.5">
+        <select
+          className="flex-1 h-8 rounded border border-black/[0.09] px-2 text-xs text-[#3A3A3C] bg-white min-w-0"
+          value={filter.field}
+          onChange={(e) => onChange({ ...filter, field: e.target.value })}
+        >
+          <option value="">Field</option>
+          {columns.map((c) => (
+            <option key={c.name} value={c.name}>{c.name}</option>
+          ))}
+        </select>
+        <button
+          className="shrink-0 text-[#AEAEB2] hover:text-[#FF3B30] transition-colors"
+          onClick={onRemove}
+        >
+          <X size={13} />
+        </button>
+      </div>
+      <div className="flex items-center gap-1.5">
+        <select
+          className="w-24 h-8 rounded border border-black/[0.09] px-1 text-xs text-[#3A3A3C] bg-white shrink-0"
+          value={filter.operator}
+          onChange={(e) => onChange({ ...filter, operator: e.target.value as FilterOperator })}
+        >
+          {OP_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value}>{o.label}</option>
+          ))}
+        </select>
+        <input
+          className="flex-1 h-8 rounded border border-black/[0.09] px-2 text-xs text-[#3A3A3C] min-w-0"
+          placeholder={filter.operator === 'in' ? 'a, b, c' : 'value'}
+          value={filter.valueStr}
+          list={suggestions.length ? listId : undefined}
+          onChange={(e) => onChange({ ...filter, valueStr: e.target.value })}
+        />
+      </div>
       {suggestions.length > 0 && (
         <datalist id={listId}>
           {suggestions.map((v) => (
@@ -292,12 +302,6 @@ function FilterRow({
           ))}
         </datalist>
       )}
-      <button
-        className="shrink-0 text-[#AEAEB2] hover:text-[#FF3B30] transition-colors"
-        onClick={onRemove}
-      >
-        <X size={13} />
-      </button>
     </div>
   )
 }
@@ -359,7 +363,7 @@ function PalettePicker({
   const isSelected = (p: string[]) => JSON.stringify(value) === JSON.stringify(p)
 
   return (
-    <div className="relative">
+    <div>
       <label className="text-xs text-[#8E8E93] mb-1.5 block">Color Palette</label>
       <button
         onClick={() => setOpen((v) => !v)}
@@ -377,7 +381,7 @@ function PalettePicker({
       </button>
 
       {open && (
-        <div className="absolute top-full left-0 right-0 mt-1.5 bg-white border border-black/[0.09] rounded-xl shadow-xl z-50 p-2 max-h-64 overflow-y-auto">
+        <div className="mt-1.5 rounded-xl border border-black/[0.09] bg-[#FAFAFA] p-2">
           <p className="text-[10px] font-semibold text-[#8E8E93] uppercase tracking-widest px-1.5 pb-1">
             Solid
           </p>
@@ -594,7 +598,8 @@ function RightPanel({
   editingChartId: string | null
 }) {
   return (
-    <div className="w-72 shrink-0 bg-white border-l border-black/[0.09] flex flex-col overflow-y-auto">
+    <div className="w-72 shrink-0 bg-white border-l border-black/[0.09] flex flex-col">
+      <div className="flex-1 overflow-y-auto">
 
       <SectionPanel title="Chart Type">
         <div className="grid grid-cols-3 gap-1.5 pt-0.5">
@@ -697,16 +702,17 @@ function RightPanel({
           <p className="text-xs text-[#AEAEB2]">No filters. Click Add to create one.</p>
         )}
         {form.filters.map((f, i) => (
-          <FilterRow
-            key={i}
-            filter={f}
-            datasetId={form.datasetId}
-            columns={columns}
-            onChange={(updated) =>
-              onChange({ filters: form.filters.map((x, j) => (j === i ? updated : x)) })
-            }
-            onRemove={() => onChange({ filters: form.filters.filter((_, j) => j !== i) })}
-          />
+          <div key={i} className={i > 0 ? 'border-t border-black/[0.08] pt-3' : ''}>
+            <FilterRow
+              filter={f}
+              datasetId={form.datasetId}
+              columns={columns}
+              onChange={(updated) =>
+                onChange({ filters: form.filters.map((x, j) => (j === i ? updated : x)) })
+              }
+              onRemove={() => onChange({ filters: form.filters.filter((_, j) => j !== i) })}
+            />
+          </div>
         ))}
       </SectionPanel>
 
@@ -725,7 +731,8 @@ function RightPanel({
         />
       </SectionPanel>
 
-      <div className="p-4 mt-auto sticky bottom-0 bg-white border-t border-black/[0.05]">
+      </div>
+      <div className="p-4 shrink-0 bg-white border-t border-black/[0.05]">
         <Button
           className="w-full gap-2"
           onClick={onSave}
@@ -839,7 +846,7 @@ export default function ReportBuilder() {
         y_field: form.yField || null,
         aggregation: form.aggregation,
         group_by: form.groupBy.filter(Boolean),
-        filters: form.filters.map(toFilterSpec),
+        filters: form.filters.filter((f) => f.field && f.valueStr.trim()).map(toFilterSpec),
         color_field: form.colorField || null,
         color_palette: form.colorPalette,
         sort_order: form.sortOrder,

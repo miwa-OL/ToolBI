@@ -2,12 +2,13 @@ import { useEffect, useState } from 'react'
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import { Menu } from 'lucide-react'
 import { Sidebar } from '@/components/Sidebar'
-import { cn } from '@/lib/utils'
 import DataSources from '@/pages/DataSources'
 import ReportBuilder from '@/pages/ReportBuilder'
 import Dashboard from '@/pages/Dashboard'
 import Help from '@/pages/Help'
 import { UpdateBanner } from '@/components/UpdateBanner'
+
+const SIDEBAR_TIMING = 'width 0.28s cubic-bezier(0.4, 0, 0.2, 1)'
 
 export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(true)
@@ -26,13 +27,37 @@ export default function App() {
         <div
           style={{
             width: sidebarOpen ? '224px' : '0px',
-            transition: 'width 0.28s cubic-bezier(0.4, 0, 0.2, 1)',
+            transition: SIDEBAR_TIMING,
             overflow: 'hidden',
             flexShrink: 0,
           }}
         >
           <div style={{ width: '224px', height: '100%' }}>
             <Sidebar onCollapse={() => setSidebarOpen(false)} />
+          </div>
+        </div>
+
+        <div
+          style={{
+            width: sidebarOpen ? '0px' : '40px',
+            transition: SIDEBAR_TIMING,
+            overflow: 'hidden',
+            flexShrink: 0,
+            background: 'white',
+          }}
+        >
+          <div style={{ width: '40px', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: '10px' }}>
+            <button
+              onClick={() => setSidebarOpen(true)}
+              title="Open sidebar"
+              style={{
+                opacity: sidebarOpen ? 0 : 1,
+                transition: sidebarOpen ? 'opacity 0s' : 'opacity 0.15s ease 0.22s',
+              }}
+              className="w-8 h-8 flex items-center justify-center text-[#8E8E93] hover:text-[#007AFF] hover:bg-black/5 rounded-xl transition-colors"
+            >
+              <Menu size={15} />
+            </button>
           </div>
         </div>
 
@@ -46,17 +71,6 @@ export default function App() {
         </main>
 
         <UpdateBanner />
-
-        <button
-          onClick={() => setSidebarOpen(true)}
-          title="Open sidebar"
-          className={cn(
-            'fixed top-4 left-3 z-50 w-8 h-8 bg-white/90 backdrop-blur-sm border border-black/[0.09] rounded-xl shadow-md flex items-center justify-center text-[#636366] hover:text-[#007AFF] hover:bg-white transition-all duration-200',
-            sidebarOpen ? 'opacity-0 pointer-events-none' : 'opacity-100',
-          )}
-        >
-          <Menu size={15} />
-        </button>
       </div>
     </BrowserRouter>
   )

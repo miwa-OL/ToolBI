@@ -1,3 +1,4 @@
+import { Component, type ReactNode } from 'react'
 import {
   Area, AreaChart, Bar, BarChart, CartesianGrid, Cell,
   Legend, Line, LineChart, Pie, PieChart as RPieChart,
@@ -5,6 +6,21 @@ import {
 } from 'recharts'
 import Plot from 'react-plotly.js'
 import type { ChartType } from '@/types'
+
+class ChartBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
+  state = { failed: false }
+  static getDerivedStateFromError() { return { failed: true } }
+  render() {
+    if (this.state.failed) {
+      return (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: 13, color: '#8E8E93' }}>
+          Unable to render chart
+        </div>
+      )
+    }
+    return this.props.children
+  }
+}
 
 interface ChartRendererProps {
   chartType: ChartType
@@ -49,7 +65,11 @@ function GradientDefs({ defs }: { defs: GradientDef[] }) {
   )
 }
 
-export function ChartRenderer({
+export function ChartRenderer(props: ChartRendererProps) {
+  return <ChartBoundary><ChartRendererInner {...props} /></ChartBoundary>
+}
+
+function ChartRendererInner({
   chartType, xField, colorPalette, rows, onPointClick, crossFilterValue,
 }: ChartRendererProps) {
   if (!rows.length) return null
