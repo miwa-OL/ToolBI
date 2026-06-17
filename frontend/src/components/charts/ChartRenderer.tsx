@@ -66,7 +66,7 @@ function GradientDefs({ defs }: { defs: GradientDef[] }) {
 }
 
 export function ChartRenderer(props: ChartRendererProps) {
-  return <ChartBoundary><ChartRendererInner {...props} /></ChartBoundary>
+  return <ChartBoundary key={props.chartType}><ChartRendererInner {...props} /></ChartBoundary>
 }
 
 function ChartRendererInner({
