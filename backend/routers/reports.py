@@ -1,7 +1,12 @@
+import csv
+import io
 import json
+import re
+import zipfile
 from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import StreamingResponse
 
 from models import ChartConfig, LayoutItem
 from schemas import (
@@ -15,6 +20,7 @@ from schemas import (
     ReportSummary,
     ReportUpdate,
 )
+from services.query_engine import resolve_parquet, run_aggregation
 from services.storage import (
     add_chart,
     count_charts,
@@ -22,8 +28,11 @@ from services.storage import (
     delete_chart,
     delete_report,
     get_chart,
+    get_dataset_record,
+    get_joined_dataset,
     get_report,
     list_charts,
+    list_computed_columns,
     list_layout,
     list_reports,
     replace_layout,
@@ -185,3 +194,80 @@ def set_layout(report_id: str, body: list[LayoutItemIn]):
         raise HTTPException(status_code=404, detail="Report not found")
     items = replace_layout(report_id, [item.model_dump() for item in body])
     return [_layout_to_out(i) for i in items]
+
+
+@router.get("/{report_id}/export/csv")
+def export_csv(report_id: str):
+    report = get_report(report_id)
+    if not report:
+        raise HTTPException(status_code=404, detail="Report not found")
+
+    charts = list_charts(report_id)
+    zip_buffer = io.BytesIO()
+
+    with zipfile.ZipFile(zip_buffer, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
+        for chart in charts:
+            filters = [FilterSpec(**f) for f in json.loads(chart.filters)]
+            group_by = json.loads(chart.group_by)
+
+            try:
+                record = get_dataset_record(chart.dataset_id)
+                if record:
+                    computed = list_computed_columns(chart.dataset_id)
+                    computed_specs = (
+                        [{"name": c.name, "expression": c.expression} for c in computed]
+                        if computed
+                        else None
+                    )
+                    rows = run_aggregation(
+                        dataset_id=chart.dataset_id,
+                        x_field=chart.x_field,
+                        y_field=chart.y_field,
+                        aggregation=chart.aggregation,
+                        group_by=group_by,
+                        filters=filters,
+                        limit=10000,
+                        computed_columns=computed_specs,
+                    )
+                else:
+                    joined = get_joined_dataset(chart.dataset_id)
+                    if not joined:
+                        continue
+                    rows = run_aggregation(
+                        dataset_id=None,
+                        x_field=chart.x_field,
+                        y_field=chart.y_field,
+                        aggregation=chart.aggregation,
+                        group_by=group_by,
+                        filters=filters,
+                        limit=10000,
+                        join_spec={
+                            "left_path": resolve_parquet(joined.left_dataset_id),
+                            "right_path": resolve_parquet(joined.right_dataset_id),
+                            "left_key": joined.left_key,
+                            "right_key": joined.right_key,
+                            "join_type": joined.join_type,
+                        },
+                    )
+            except Exception:
+                continue
+
+            if not rows:
+                continue
+
+            buf = io.StringIO()
+            writer = csv.DictWriter(buf, fieldnames=list(rows[0].keys()))
+            writer.writeheader()
+            writer.writerows(rows)
+
+            safe_title = re.sub(r"[^\w\s-]", "", chart.title).strip().replace(" ", "_")
+            filename = f"{safe_title or chart.id}.csv"
+            zf.writestr(filename, buf.getvalue())
+
+    zip_buffer.seek(0)
+    safe_name = re.sub(r"[^\w\s-]", "", report.name).strip().replace(" ", "_") or report_id
+    return StreamingResponse(
+        zip_buffer,
+        media_type="application/zip",
+        headers={"Content-Disposition": f'attachment; filename="{safe_name}.zip"'},
+    )

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
   DndContext,
@@ -8,7 +8,7 @@ import {
   useSensors,
   type DragEndEvent,
 } from '@dnd-kit/core'
-import { BarChart2, Download, Filter, Loader2, Pencil, Plus, X } from 'lucide-react'
+import { BarChart2, ChevronDown, Download, Filter, Loader2, Pencil, Plus, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ChartRenderer } from '@/components/charts/ChartRenderer'
 import { FilterPanel, type FilterField } from '@/components/FilterPanel'
@@ -16,8 +16,9 @@ import { cn } from '@/lib/utils'
 import { useReportStore } from '@/store/reportStore'
 import { useDatasetsStore } from '@/store/datasetsStore'
 import { globalFiltersToSpecs, useFilterStore } from '@/store/filterStore'
+import { toast } from '@/store/toastStore'
 import { runAggregation } from '@/api/query'
-import { setLayout as apiSetLayout } from '@/api/reports'
+import { exportChartDataUrl, setLayout as apiSetLayout } from '@/api/reports'
 import type {
   AggregationType, ChartConfigOut, ChartType,
   FilterOperator, FilterSpec, LayoutItemOut, ReportDetail,
@@ -58,7 +59,7 @@ function buildInitialLayout(report: ReportDetail, prev: LayoutItemOut[]): Layout
   })
 }
 
-function DraggableWidget({
+const DraggableWidget = memo(function DraggableWidget({
   item,
   chart,
   data,
@@ -212,6 +213,82 @@ function DraggableWidget({
       </div>
     </div>
   )
+})
+
+function ExportMenu({ reportId, reportName, canvasRef }: {
+  reportId: string
+  reportName: string
+  canvasRef: React.RefObject<HTMLDivElement | null>
+}) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [open])
+
+  const handleExportCsv = () => {
+    setOpen(false)
+    const link = document.createElement('a')
+    link.href = exportChartDataUrl(reportId)
+    link.download = `${reportName}.zip`
+    link.click()
+  }
+
+  const handleExportPng = async () => {
+    setOpen(false)
+    if (!canvasRef.current) return
+    try {
+      const { default: html2canvas } = await import('html2canvas')
+      const canvas = await html2canvas(canvasRef.current, {
+        backgroundColor: '#F2F2F7',
+        useCORS: true,
+      })
+      const link = document.createElement('a')
+      link.href = canvas.toDataURL('image/png')
+      const date = new Date().toISOString().slice(0, 10)
+      link.download = `${reportName}-${date}.png`
+      link.click()
+    } catch {
+      toast.error('Failed to export PNG')
+    }
+  }
+
+  return (
+    <div className="relative" ref={ref}>
+      <Button
+        variant="outline"
+        size="sm"
+        className="gap-1.5"
+        onClick={() => setOpen((v) => !v)}
+      >
+        <Download size={13} />
+        Export
+        <ChevronDown size={11} className={cn('transition-transform', open && 'rotate-180')} />
+      </Button>
+      {open && (
+        <div className="absolute right-0 top-full mt-1 w-52 bg-white border border-black/[0.09] rounded-xl shadow-lg z-50 py-1 overflow-hidden">
+          <button
+            className="w-full text-left px-4 py-2.5 text-sm text-[#3A3A3C] hover:bg-[#F5F5F7] transition-colors"
+            onClick={handleExportCsv}
+          >
+            Export Chart Data as CSV
+          </button>
+          <button
+            className="w-full text-left px-4 py-2.5 text-sm text-[#3A3A3C] hover:bg-[#F5F5F7] transition-colors"
+            onClick={handleExportPng}
+          >
+            Export Dashboard as PNG
+          </button>
+        </div>
+      )}
+    </div>
+  )
 }
 
 export default function Dashboard() {
@@ -227,6 +304,8 @@ export default function Dashboard() {
   const [colW, setColW] = useState(80)
   const [filterPanelOpen, setFilterPanelOpen] = useState(false)
   const canvasRef = useRef<HTMLDivElement>(null)
+
+  const queryCache = useRef<Map<string, Record<string, unknown>[]>>(new Map())
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -270,16 +349,21 @@ export default function Dashboard() {
 
   const fetchSingleChart = useCallback(
     async (chart: ChartConfigOut, extraFilters: FilterSpec[]) => {
+      const cacheKey = `${chart.id}:${JSON.stringify(extraFilters)}`
+      const cached = queryCache.current.get(cacheKey)
+
       setChartData((prev) => {
         const next = new Map(prev)
         const existing = prev.get(chart.id)
         next.set(chart.id, {
-          rows: existing?.rows ?? [],
-          loading: true,
+          rows: cached ?? existing?.rows ?? [],
+          loading: !cached,
           error: false,
         })
         return next
       })
+
+      if (cached) return
 
       const extraFields = new Set(extraFilters.map((f) => f.field))
       const ownFilters = (chart.filters as FilterSpec[]).filter((f) => !extraFields.has(f.field))
@@ -294,6 +378,7 @@ export default function Dashboard() {
           filters: [...ownFilters, ...extraFilters],
           limit: 500,
         })
+        queryCache.current.set(cacheKey, resp.rows)
         setChartData((prev) => {
           const next = new Map(prev)
           next.set(chart.id, { rows: resp.rows, loading: false, error: false })
@@ -470,10 +555,11 @@ export default function Dashboard() {
           <Plus size={13} />
           Add Chart
         </Button>
-        <Button variant="outline" size="sm" className="gap-1.5" disabled>
-          <Download size={13} />
-          Export
-        </Button>
+        <ExportMenu
+          reportId={reportId!}
+          reportName={activeReport.name}
+          canvasRef={canvasRef}
+        />
       </div>
 
       <div className="flex flex-1 min-h-0">

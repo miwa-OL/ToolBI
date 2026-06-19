@@ -271,14 +271,53 @@ Chart ownership is verified on update/delete (chart.report_id must match path re
 
 ---
 
-## Up Next
+---
 
-### Session 11 — Further polish / features
+### Session 11 — Final polish pass (2026-06-19)
+
+**Export:**
+- `GET /api/v1/reports/{id}/export/csv` — runs all chart queries, returns ZIP with one CSV per chart
+- Dashboard Export dropdown (replaced disabled button): "Export Chart Data as CSV" triggers ZIP download; "Export Dashboard as PNG" uses html2canvas to screenshot the canvas div
+- `html2canvas ^1.4.1` added to frontend dependencies
+
+**Error handling:**
+- `frontend/src/api/client.ts` — shared axios instance with response interceptor converting all 4xx/5xx errors to typed `ApiError { status, detail }`; all three API modules (`reports.ts`, `query.ts`, `datasets.ts`) now use this client
+- `frontend/src/components/ErrorBoundary.tsx` — app-level React error boundary wrapping the entire app in `App.tsx`; shows user-friendly error card with "Reload App" button
+- `frontend/src/store/toastStore.ts` + `frontend/src/components/Toaster.tsx` — lightweight toast system (no external dependency); `toast.error()` / `toast.success()` callable from anywhere; toasts auto-dismiss after 4 s; Toaster rendered in App.tsx
+
+**Loading states:**
+- `frontend/src/components/ui/skeleton.tsx` — Skeleton component for future use
+- DataSources upload zone: real progress bar via axios `onUploadProgress` (stores forward optional `onProgress` callback through `datasetsStore.uploadDataset`)
+
+**Performance:**
+- `DraggableWidget` in Dashboard wrapped in `React.memo`
+- Query results cached in a per-Dashboard `useRef<Map>` keyed by `chartId + serialised filters`; cache hit skips the fetch entirely
+
+**Empty states:**
+- DataSources: inline SVG table illustration replaces plain text when no datasets uploaded
+- Dashboard: existing "No charts" state retained (already well-designed)
+
+**`npm run build` → zero TypeScript errors**
+
+---
+
+## MVP Status: COMPLETE ✓
+
+All core features shipped and packaged as a Windows `.exe`:
+- Dataset upload, preview, computed columns, joins
+- Report builder with 6 chart types, filters, color palettes
+- Dashboard with drag-and-drop, resize, cross-filtering, global filters
+- Export (CSV + PNG)
+- Error boundaries, toast notifications, upload progress
+- PyInstaller packaging with splash screen and auto-updater
+
+## Up Next (Future Sessions)
+
+- macOS `.app` packaging (requires Mac build environment)
+- User-defined SQL mode (raw query editor exposed in Report Builder)
+- Additional chart types: funnel, treemap, waterfall
 - Delete report from sidebar (right-click or trash icon)
 - Report list sorted by `updated_at` desc
 - Dashboard: grid snap indicator lines while dragging
-- Dashboard: "Export as PNG" via html2canvas
 - DataSources: column search/filter in preview panel
-- Global error toast notifications (axios interceptor → toast)
-- Empty-state illustrations for Data Sources and Dashboard
 - Keyboard shortcuts: `Escape` to cancel rename, `Ctrl+S` to save chart

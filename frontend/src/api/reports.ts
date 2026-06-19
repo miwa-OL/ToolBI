@@ -1,4 +1,4 @@
-import axios from 'axios'
+import client from './client'
 import type {
   ChartConfigCreate,
   ChartConfigOut,
@@ -11,34 +11,34 @@ import type {
 const BASE = '/api/v1/reports'
 
 export async function createReport(name: string): Promise<ReportSummary> {
-  const { data } = await axios.post<ReportSummary>(BASE, { name })
+  const { data } = await client.post<ReportSummary>(BASE, { name })
   return data
 }
 
 export async function listReports(): Promise<ReportSummary[]> {
-  const { data } = await axios.get<ReportSummary[]>(BASE)
+  const { data } = await client.get<ReportSummary[]>(BASE)
   return data
 }
 
 export async function getReport(id: string): Promise<ReportDetail> {
-  const { data } = await axios.get<ReportDetail>(`${BASE}/${id}`)
+  const { data } = await client.get<ReportDetail>(`${BASE}/${id}`)
   return data
 }
 
 export async function renameReport(id: string, name: string): Promise<ReportSummary> {
-  const { data } = await axios.put<ReportSummary>(`${BASE}/${id}`, { name })
+  const { data } = await client.put<ReportSummary>(`${BASE}/${id}`, { name })
   return data
 }
 
 export async function deleteReport(id: string): Promise<void> {
-  await axios.delete(`${BASE}/${id}`)
+  await client.delete(`${BASE}/${id}`)
 }
 
 export async function addChart(
   reportId: string,
   chart: ChartConfigCreate,
 ): Promise<ChartConfigOut> {
-  const { data } = await axios.post<ChartConfigOut>(`${BASE}/${reportId}/charts`, chart)
+  const { data } = await client.post<ChartConfigOut>(`${BASE}/${reportId}/charts`, chart)
   return data
 }
 
@@ -47,7 +47,7 @@ export async function updateChart(
   chartId: string,
   chart: ChartConfigCreate,
 ): Promise<ChartConfigOut> {
-  const { data } = await axios.put<ChartConfigOut>(
+  const { data } = await client.put<ChartConfigOut>(
     `${BASE}/${reportId}/charts/${chartId}`,
     chart,
   )
@@ -55,13 +55,17 @@ export async function updateChart(
 }
 
 export async function deleteChart(reportId: string, chartId: string): Promise<void> {
-  await axios.delete(`${BASE}/${reportId}/charts/${chartId}`)
+  await client.delete(`${BASE}/${reportId}/charts/${chartId}`)
 }
 
 export async function setLayout(
   reportId: string,
   items: LayoutItemIn[],
 ): Promise<LayoutItemOut[]> {
-  const { data } = await axios.put<LayoutItemOut[]>(`${BASE}/${reportId}/layout`, items)
+  const { data } = await client.put<LayoutItemOut[]>(`${BASE}/${reportId}/layout`, items)
   return data
+}
+
+export function exportChartDataUrl(reportId: string): string {
+  return `${BASE}/${reportId}/export/csv`
 }

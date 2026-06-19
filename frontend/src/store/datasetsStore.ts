@@ -7,7 +7,7 @@ interface DatasetsState {
   joinedDatasets: JoinedDataset[]
   fetchDatasets: () => Promise<void>
   fetchJoinedDatasets: () => Promise<void>
-  uploadDataset: (file: File) => Promise<DatasetMeta>
+  uploadDataset: (file: File, onProgress?: (pct: number) => void) => Promise<DatasetMeta>
   removeDataset: (id: string) => Promise<void>
   createJoin: (body: {
     name: string
@@ -34,8 +34,8 @@ export const useDatasetsStore = create<DatasetsState>((set) => ({
     set({ joinedDatasets })
   },
 
-  uploadDataset: async (file) => {
-    const dataset = await api.uploadDataset(file)
+  uploadDataset: async (file, onProgress) => {
+    const dataset = await api.uploadDataset(file, onProgress)
     set((state) => ({ datasets: [...state.datasets, dataset] }))
     return dataset
   },

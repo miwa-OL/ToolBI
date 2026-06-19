@@ -581,6 +581,7 @@ export default function DataSources() {
   const [dragOver, setDragOver] = useState(false)
   const [pendingFile, setPendingFile] = useState<File | null>(null)
   const [uploading, setUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
 
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [preview, setPreview] = useState<DatasetPreview | null>(null)
@@ -670,11 +671,13 @@ export default function DataSources() {
   const handleUpload = async () => {
     if (!pendingFile) return
     setUploading(true)
+    setUploadProgress(0)
     try {
-      await uploadDataset(pendingFile)
+      await uploadDataset(pendingFile, setUploadProgress)
       setPendingFile(null)
     } finally {
       setUploading(false)
+      setUploadProgress(0)
     }
   }
 
@@ -742,11 +745,22 @@ export default function DataSources() {
         />
 
         {pendingFile ? (
-          <div className="flex flex-col items-center gap-3">
-            <div className="text-[#3A3A3C]">
+          <div className="flex flex-col items-center gap-3 w-full max-w-xs">
+            <div className="text-[#3A3A3C] text-center">
               <p className="font-medium">{pendingFile.name}</p>
               <p className="text-sm text-[#8E8E93] mt-0.5">{formatBytes(pendingFile.size)}</p>
             </div>
+            {uploading && (
+              <div className="w-full">
+                <div className="h-1.5 bg-[#E5E5EA] rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-[#007AFF] rounded-full transition-all duration-150"
+                    style={{ width: `${uploadProgress}%` }}
+                  />
+                </div>
+                <p className="text-xs text-[#8E8E93] text-center mt-1">{uploadProgress}%</p>
+              </div>
+            )}
             <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
               <Button onClick={handleUpload} disabled={uploading}>
                 {uploading ? (
@@ -758,7 +772,7 @@ export default function DataSources() {
                   'Upload'
                 )}
               </Button>
-              <Button variant="ghost" onClick={() => setPendingFile(null)}>
+              <Button variant="ghost" onClick={() => setPendingFile(null)} disabled={uploading}>
                 Cancel
               </Button>
             </div>
@@ -776,9 +790,19 @@ export default function DataSources() {
 
       <div className="mt-8">
         {datasets.length === 0 ? (
-          <p className="text-center text-sm text-[#AEAEB2] py-12">
-            No datasets yet. Upload a CSV to get started.
-          </p>
+          <div className="flex flex-col items-center py-16 text-[#AEAEB2] select-none">
+            <svg width="64" height="64" viewBox="0 0 64 64" fill="none" className="mb-4 opacity-40">
+              <rect x="8" y="16" width="48" height="36" rx="4" stroke="currentColor" strokeWidth="2" />
+              <line x1="8" y1="26" x2="56" y2="26" stroke="currentColor" strokeWidth="2" />
+              <line x1="24" y1="26" x2="24" y2="52" stroke="currentColor" strokeWidth="1.5" />
+              <rect x="14" y="31" width="6" height="4" rx="1" fill="currentColor" opacity="0.4" />
+              <rect x="28" y="31" width="14" height="4" rx="1" fill="currentColor" opacity="0.25" />
+              <rect x="14" y="40" width="6" height="4" rx="1" fill="currentColor" opacity="0.4" />
+              <rect x="28" y="40" width="20" height="4" rx="1" fill="currentColor" opacity="0.25" />
+            </svg>
+            <p className="text-sm font-medium text-[#8E8E93]">No datasets yet</p>
+            <p className="text-xs text-[#AEAEB2] mt-1">Upload a CSV file above to get started</p>
+          </div>
         ) : (
           <div className="border border-black/[0.09] rounded-xl overflow-hidden">
             <table className="w-full">

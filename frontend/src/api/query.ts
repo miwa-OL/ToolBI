@@ -1,15 +1,15 @@
-import axios from 'axios'
+import client from './client'
 import type { AggregationRequest, AggregationResponse } from '@/types'
 
 const BASE = '/api/v1/query'
 
 export async function runAggregation(req: AggregationRequest): Promise<AggregationResponse> {
-  const { data } = await axios.post<AggregationResponse>(`${BASE}/aggregate`, req)
+  const { data } = await client.post<AggregationResponse>(`${BASE}/aggregate`, req)
   return data
 }
 
 export async function getDistinctValues(datasetId: string, field: string): Promise<string[]> {
-  const { data } = await axios.get<string[]>(`${BASE}/distinct-values`, {
+  const { data } = await client.get<string[]>(`${BASE}/distinct-values`, {
     params: { dataset_id: datasetId, field },
   })
   return data
@@ -19,7 +19,7 @@ export async function validateExpression(
   datasetId: string,
   expression: string,
 ): Promise<{ valid: boolean; error: string | null }> {
-  const { data } = await axios.get<{ valid: boolean; error: string | null }>(
+  const { data } = await client.get<{ valid: boolean; error: string | null }>(
     `${BASE}/validate-expression`,
     { params: { dataset_id: datasetId, expression } },
   )
@@ -30,6 +30,6 @@ export async function runRawQuery(
   dataset_id: string,
   sql: string,
 ): Promise<Record<string, unknown>[]> {
-  const { data } = await axios.post<Record<string, unknown>[]>(`${BASE}/raw`, { dataset_id, sql })
+  const { data } = await client.post<Record<string, unknown>[]>(`${BASE}/raw`, { dataset_id, sql })
   return data
 }
